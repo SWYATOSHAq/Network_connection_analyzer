@@ -1,0 +1,357 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="using:Анализатор_сетевых_подключений.Converters"
+        x:CompileBindings="False"
+        x:Class="Анализатор_сетевых_подключений.MainWindow"
+        Title="Анализатор сетевых подключений"
+        Width="1120" Height="760"
+        MinWidth="900" MinHeight="600">
+
+    <Window.Resources>
+        <conv:StatusToColorConverter x:Key="StatusColorConverter"/>
+    </Window.Resources>
+
+    <!-- Root: фоновое изображение + затемняющий оверлей + контент -->
+    <Grid>
+
+        <!-- Фоновое изображение (загружается из кода) -->
+        <Image x:Name="BgImage"
+               Stretch="UniformToFill"
+               Opacity="0.55"/>
+
+        <!-- Тёмный полупрозрачный оверлей для читаемости -->
+        <Border Background="#C0101820"/>
+
+        <!-- ═══ ОСНОВНОЙ КОНТЕНТ ═══ -->
+        <Grid RowDefinitions="54,*">
+
+            <!-- ─── HEADER ─── -->
+            <Border Grid.Row="0" Background="#CC0D1B2E">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0">
+                    <TextBlock Text="&#9670;" FontSize="22" Foreground="#63B3ED"
+                               VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBlock Text="Анализатор сетевых подключений"
+                               Foreground="White" FontSize="17" FontWeight="Bold"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ─── MAIN LAYOUT ─── -->
+            <Grid Grid.Row="1" ColumnDefinitions="300,*">
+
+                <!-- ══ LEFT: список интерфейсов ══ -->
+                <Border Grid.Column="0"
+                        Background="#CC0D1B2E"
+                        BorderBrush="#4063B3ED" BorderThickness="0,0,1,0">
+                    <DockPanel>
+
+                        <!-- Заголовок панели -->
+                        <Border DockPanel.Dock="Top" Background="#CC162A4A" Padding="12,10">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Сетевые интерфейсы"
+                                           Foreground="#E2E8F0" FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+                                <Button Grid.Column="1"
+                                        Content="Обновить"
+                                        Command="{Binding LoadInterfacesCommand}"
+                                        Background="Transparent" Foreground="#90CDF4"
+                                        BorderBrush="#4063B3ED" BorderThickness="1"
+                                        Padding="8,4" CornerRadius="4"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Счётчик -->
+                        <Border DockPanel.Dock="Top" Background="#801A3352" Padding="12,5">
+                            <TextBlock FontSize="12" Foreground="#90CDF4">
+                                <Run Text="Найдено: "/>
+                                <Run Text="{Binding NetworkInterfaces.Count}"/>
+                                <Run Text=" интерфейсов"/>
+                            </TextBlock>
+                        </Border>
+
+                        <!-- Список интерфейсов -->
+                        <ListBox ItemsSource="{Binding NetworkInterfaces}"
+                                 SelectedItem="{Binding SelectedInterface}"
+                                 Background="Transparent"
+                                 BorderThickness="0">
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="#401A3352"/>
+                                </Style>
+                                <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="#30FFFFFF"/>
+                                </Style>
+                            </ListBox.Styles>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="6,5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="16"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Ellipse Grid.Column="0"
+                                                 Width="10" Height="10"
+                                                 Fill="{Binding Status, Converter={StaticResource StatusColorConverter}}"
+                                                 VerticalAlignment="Top" Margin="0,3,0,0"/>
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock Text="{Binding Name}"
+                                                       Foreground="#E2E8F0"
+                                                       FontWeight="SemiBold" FontSize="13"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding InterfaceType}"
+                                                       FontSize="11" Foreground="#90CDF4"/>
+                                            <TextBlock Text="{Binding IpAddressDisplay}"
+                                                       FontSize="11" Foreground="#A0AEC0"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                    </DockPanel>
+                </Border>
+
+                <!-- ══ RIGHT: детали + анализ URL ══ -->
+                <ScrollViewer Grid.Column="1"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16" Spacing="16">
+
+                        <!-- Заглушка — интерфейс не выбран -->
+                        <Border Background="#BF0D1B2E" CornerRadius="10" Padding="28"
+                                IsVisible="{Binding !InterfaceSelected}"
+                                BorderBrush="#3063B3ED" BorderThickness="1">
+                            <StackPanel HorizontalAlignment="Center" Spacing="10">
+                                <TextBlock Text="&#9670;" FontSize="40"
+                                           Foreground="#4A5568" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Выберите интерфейс в списке слева"
+                                           Foreground="#718096"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ─── Карточка: информация об интерфейсе ─── -->
+                        <Border Background="#BF0D1B2E" CornerRadius="10" Padding="18"
+                                IsVisible="{Binding InterfaceSelected}"
+                                BorderBrush="#3063B3ED" BorderThickness="1">
+                            <StackPanel Spacing="12">
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Информация об интерфейсе"
+                                               FontSize="15" FontWeight="Bold" Foreground="#90CDF4"
+                                               VerticalAlignment="Center"/>
+                                    <Border Grid.Column="1" CornerRadius="12" Padding="10,3"
+                                            Background="{Binding SelectedInterface.Status, Converter={StaticResource StatusColorConverter}}">
+                                        <TextBlock Text="{Binding SelectedInterface.Status}"
+                                                   Foreground="White" FontSize="12" FontWeight="SemiBold"/>
+                                    </Border>
+                                </Grid>
+
+                                <Rectangle Height="1" Fill="#2563B3ED"/>
+
+                                <Grid ColumnDefinitions="160,*"
+                                      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                                      RowSpacing="8">
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Имя:" Foreground="#718096" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedInterface.Name}" Foreground="#E2E8F0" TextWrapping="Wrap"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Описание:" Foreground="#718096" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedInterface.Description}" Foreground="#E2E8F0" TextWrapping="Wrap"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Тип интерфейса:" Foreground="#718096" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedInterface.InterfaceType}" Foreground="#E2E8F0"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="MAC-адрес:" Foreground="#718096" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedInterface.MacAddress}" Foreground="#63B3ED" FontFamily="monospace"/>
+
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="IP-адрес:" Foreground="#718096" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedInterface.IpAddressDisplay}" Foreground="#63B3ED" TextWrapping="Wrap" FontFamily="monospace"/>
+
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Маска подсети:" Foreground="#718096" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedInterface.SubnetMaskDisplay}" Foreground="#63B3ED" TextWrapping="Wrap" FontFamily="monospace"/>
+
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Шлюз:" Foreground="#718096" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding SelectedInterface.GatewayDisplay}" Foreground="#63B3ED" FontFamily="monospace"/>
+
+                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="Скорость:" Foreground="#718096" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding SelectedInterface.Speed}" Foreground="#E2E8F0"/>
+
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ─── Карточка: анализ URL ─── -->
+                        <Border Background="#BF0D1B2E" CornerRadius="10" Padding="18"
+                                BorderBrush="#3063B3ED" BorderThickness="1">
+                            <StackPanel Spacing="12">
+
+                                <TextBlock Text="Анализ URL / URI"
+                                           FontSize="15" FontWeight="Bold" Foreground="#90CDF4"/>
+                                <Rectangle Height="1" Fill="#2563B3ED"/>
+
+                                <!-- Ввод URL -->
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding UrlInput}"
+                                             Watermark="https://example.com:8080/path?key=value#section"
+                                             Foreground="#E2E8F0"
+                                             Background="#801A3352"
+                                             BorderBrush="#4063B3ED"
+                                             CaretBrush="White"
+                                             VerticalContentAlignment="Center"
+                                             Margin="0,0,8,0"/>
+                                    <Button Grid.Column="1"
+                                            Content="Анализировать"
+                                            Command="{Binding AnalyzeUrlCommand}"
+                                            IsEnabled="{Binding !IsAnalyzing}"
+                                            Background="#1A3A6E" Foreground="#90CDF4"
+                                            BorderBrush="#4063B3ED" BorderThickness="1"
+                                            Padding="16,10" CornerRadius="6"/>
+                                </Grid>
+
+                                <!-- Индикатор загрузки -->
+                                <TextBlock Text="Выполняется анализ..."
+                                           IsVisible="{Binding IsAnalyzing}"
+                                           Foreground="#4299E1" FontStyle="Italic"/>
+
+                                <!-- Результаты разбора URL -->
+                                <Border Background="#801A3352" CornerRadius="8" Padding="14"
+                                        IsVisible="{Binding HasUrlAnalysis}"
+                                        BorderBrush="#3063B3ED" BorderThickness="1">
+                                    <StackPanel Spacing="12">
+
+                                        <TextBlock Text="Компоненты URL"
+                                                   FontWeight="SemiBold" Foreground="#90CDF4"/>
+                                        <Rectangle Height="1" Fill="#2563B3ED"/>
+
+                                        <Grid ColumnDefinitions="150,*"
+                                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                                              RowSpacing="6">
+
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Схема (протокол):" Foreground="#718096" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding UrlAnalysis.Scheme}" Foreground="#E2E8F0"/>
+
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Хост:" Foreground="#718096" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding UrlAnalysis.Host}" Foreground="#63B3ED" FontFamily="monospace"/>
+
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Порт:" Foreground="#718096" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding UrlAnalysis.Port}" Foreground="#E2E8F0"/>
+
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Путь:" Foreground="#718096" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding UrlAnalysis.Path}" Foreground="#A0AEC0" TextWrapping="Wrap" FontFamily="monospace"/>
+
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Параметры запроса:" Foreground="#718096" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding UrlAnalysis.Query}" Foreground="#A0AEC0" TextWrapping="Wrap" FontFamily="monospace"/>
+
+                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Фрагмент:" Foreground="#718096" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding UrlAnalysis.Fragment}" Foreground="#E2E8F0"/>
+
+                                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Тип адреса:" Foreground="#718096" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding UrlAnalysis.AddressType}" Foreground="#68D391"/>
+
+                                        </Grid>
+
+                                        <Rectangle Height="1" Fill="#2563B3ED"/>
+
+                                        <!-- Ping + DNS -->
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <Border Grid.Column="0" Background="#801A3352" CornerRadius="6"
+                                                    Padding="12" BorderBrush="#3063B3ED" BorderThickness="1">
+                                                <StackPanel Spacing="6">
+                                                    <TextBlock Text="Ping" FontWeight="SemiBold" Foreground="#90CDF4"/>
+                                                    <TextBlock Text="{Binding UrlAnalysis.PingResult}"
+                                                               TextWrapping="Wrap" FontSize="12" Foreground="#CBD5E0"/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <Border Grid.Column="2" Background="#801A3352" CornerRadius="6"
+                                                    Padding="12" BorderBrush="#3063B3ED" BorderThickness="1">
+                                                <StackPanel Spacing="6">
+                                                    <TextBlock Text="DNS" FontWeight="SemiBold" Foreground="#90CDF4"/>
+                                                    <TextBlock Text="{Binding UrlAnalysis.DnsResult}"
+                                                               TextWrapping="Wrap" FontSize="12" Foreground="#CBD5E0"/>
+                                                    <TextBlock Text="{Binding UrlAnalysis.DnsAliases}"
+                                                               TextWrapping="Wrap" FontSize="11" Foreground="#718096"/>
+                                                </StackPanel>
+                                            </Border>
+
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ─── Карточка: история ─── -->
+                        <Border Background="#BF0D1B2E" CornerRadius="10" Padding="18"
+                                BorderBrush="#3063B3ED" BorderThickness="1">
+                            <StackPanel Spacing="12">
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="История проверок"
+                                               FontSize="15" FontWeight="Bold" Foreground="#90CDF4"
+                                               VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="Очистить"
+                                            Command="{Binding ClearHistoryCommand}"
+                                            IsVisible="{Binding HasHistory}"
+                                            Background="Transparent" Foreground="#FC8181"
+                                            BorderBrush="#FC8181" BorderThickness="1"
+                                            Padding="10,4" CornerRadius="4"/>
+                                </Grid>
+
+                                <Rectangle Height="1" Fill="#2563B3ED"/>
+
+                                <TextBlock Text="История проверок пуста"
+                                           IsVisible="{Binding !HasHistory}"
+                                           Foreground="#4A5568" FontStyle="Italic"
+                                           HorizontalAlignment="Center" Margin="0,8"/>
+
+                                <ListBox ItemsSource="{Binding UrlHistory}"
+                                         SelectedItem="{Binding SelectedHistoryItem}"
+                                         IsVisible="{Binding HasHistory}"
+                                         Background="Transparent" BorderThickness="0"
+                                         MaxHeight="200">
+                                    <ListBox.Styles>
+                                        <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                                            <Setter Property="Background" Value="#401A3352"/>
+                                        </Style>
+                                        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+                                            <Setter Property="Background" Value="#30FFFFFF"/>
+                                        </Style>
+                                    </ListBox.Styles>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}"
+                                                       Foreground="#90CDF4"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       FontSize="13" Padding="4,3"
+                                                       ToolTip.Tip="{Binding}"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <TextBlock Text="Нажмите на URL в истории, чтобы загрузить его в поле анализа"
+                                           FontSize="11" Foreground="#4A5568"
+                                           IsVisible="{Binding HasHistory}"
+                                           HorizontalAlignment="Center"/>
+
+                            </StackPanel>
+                        </Border>
+
+                        <Border Height="8"/>
+
+                    </StackPanel>
+                </ScrollViewer>
+
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
